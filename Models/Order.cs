@@ -3,8 +3,9 @@
     public class Order
     {
         public int Id { get; set; }
-        public int customerId { get; set; }
-        public bool isComplete { get; set; }
-        public int paymentTypeId { get; set; }
+        public int CustomerId { get; set; }
+        public bool IsComplete { get; set; }
+        public int PaymentTypeId { get; set; }
+        public ICollection<Product>? products { get; set; }
     }
 }
