@@ -113,16 +113,17 @@ app.MapPost("/orders", (bangazonBEDbContext db , Order newOrder) =>
 
 
 
-app.MapPost("/orders/{orderId}/products/{productId}", (bangazonBEDbContext db, int orderId, int productId) =>
+
+app.MapPost("/orders/addProduct", (bangazonBEDbContext db, addProductDTO newProduct) =>
 {
-    var order = db.Orders.Include(o => o.Products).FirstOrDefault(o => o.Id == orderId);
+    var order = db.Orders.Include(o => o.Products).FirstOrDefault(o => o.Id == newProduct.OrderId);
 
     if (order == null)
     {
         return Results.NotFound("Order not found.");
     }
 
-    var product = db.Products.Find(productId);
+    var product = db.Products.Find(newProduct.ProductId);
 
     if (product == null)
     {
@@ -133,7 +134,7 @@ app.MapPost("/orders/{orderId}/products/{productId}", (bangazonBEDbContext db, i
 
     db.SaveChanges();
 
-    return Results.Created($"/api/orders/{orderId}/products/{productId}", product);
+    return Results.Created($"/orders/addProduct", newProduct);
 });
 
 app.MapDelete("/orders/{orderId}/products/{productId}", (bangazonBEDbContext db, int orderId, int productId) =>
