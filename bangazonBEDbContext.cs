@@ -48,7 +48,11 @@ public class bangazonBEDbContext : DbContext
             new Category { Id = 2, Title = "Appliances"},
             new Category { Id = 3, Title = "Home/Office"}
         });
-   
+        modelBuilder.Entity<Order>()
+         .HasMany(o => o.Products)
+         .WithMany(p => p.Orders)
+         .UsingEntity(j => j.ToTable("OrderProduct"));
+
     }
 }
 

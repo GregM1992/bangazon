@@ -8,7 +8,7 @@
         public decimal PricePerUnit { get; set; }
         public int QuantityAvailable { get; set; }
         public int SellerId { get; set; }
-        public ICollection<Order>? orders { get; set; }
+        public ICollection<Order>? Orders { get; set; }
 
     }
 }
