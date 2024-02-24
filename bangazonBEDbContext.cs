@@ -17,27 +17,30 @@ public class bangazonBEDbContext : DbContext
     {
         modelBuilder.Entity<User>().HasData(new User[]
         {
-            new User { Id = 1, uId = "jsUn6Bt9QFWVaLvZMFUyN8hygCH2", firstName = "Gregory", lastName = "Markus", address = "2004 Nashville St. Nashville", email = "myemail.com", isSeller = true, userName = "gregGroks13" },
-            new User { Id = 2, firstName = "Joe", uId = null, lastName = "Guy", address = "102 theway dr.", email = "email2.com", userName = "username2", isSeller = true}
+            new User { Id = 1, Uid = "jsUn6Bt9QFWVaLvZMFUyN8hygCH2", FirstName = "Gregory", LastName = "Markus", Address = "2004 Nashville St. Nashville", Email = "myemail.com", IsSeller = true, UserName = "gregGroks13" },
+            new User { Id = 2, FirstName = "Joe", Uid = null, LastName = "Guy", Address = "102 theway dr.", Email = "email2.com", UserName = "username2", IsSeller = true}
 
         });
         modelBuilder.Entity<Product>().HasData(new Product[]
         {
-            new Product { Id = 1, categoryId = 1, productName = "bottle", pricePerUnit = 2.00m, quantityAvailable = 4, sellerId =1},
-            new Product { Id = 2, categoryId = 1, productName = "mug", pricePerUnit = 3.23m, quantityAvailable = 3, sellerId = 1},
-            new Product { Id = 3, categoryId = 3, productName = "sharpie", pricePerUnit = 1.00m, quantityAvailable = 2, sellerId = 2}
+            new Product { Id = 1, CategoryId = 1, ProductName = "bottle", PricePerUnit = 2.00m, QuantityAvailable = 4, SellerId =1},
+            new Product { Id = 2, CategoryId = 1, ProductName = "mug", PricePerUnit = 3.23m, QuantityAvailable = 3, SellerId = 1},
+            new Product { Id = 3, CategoryId = 3, ProductName = "sharpie", PricePerUnit = 1.00m, QuantityAvailable = 2, SellerId = 2},
+            new Product { Id = 4, CategoryId = 1, ProductName = "screwdriver", PricePerUnit = 2.00m, QuantityAvailable = 2, SellerId = 1},
+            new Product { Id = 5, CategoryId = 3, ProductName = "stapler", PricePerUnit = 12.00m, QuantityAvailable = 3, SellerId = 1},
+            new Product { Id = 6, CategoryId = 2, ProductName = "microwave", PricePerUnit = 200.00m, QuantityAvailable = 12, SellerId = 2},
         });
         modelBuilder.Entity<Order>().HasData(new Order[]
         {
-            new Order { Id = 1, customerId = 1, isComplete = false, paymentTypeId = 2},
-            new Order { Id = 2, customerId = 2, isComplete = false, paymentTypeId = 1},
-            new Order { Id = 3, customerId = 2, isComplete = true , paymentTypeId = 2}
+            new Order { Id = 1, CustomerId = 1, IsComplete = false, PaymentTypeId = 2},
+            new Order { Id = 2, CustomerId = 2, IsComplete = false, PaymentTypeId = 1},
+            new Order { Id = 3, CustomerId = 2, IsComplete = true , PaymentTypeId = 2}
         });
         modelBuilder.Entity<PaymentType>().HasData(new PaymentType[]
         {
-            new PaymentType { Id = 1, type = "Credit"},
-            new PaymentType { Id = 2, type = "Cash"},
-            new PaymentType { Id = 3, type = "Check"}
+            new PaymentType { Id = 1, Type = "Credit"},
+            new PaymentType { Id = 2, Type = "Cash"},
+            new PaymentType { Id = 3, Type = "Check"}
         });
         modelBuilder.Entity<Category>().HasData(new Category[]
         {
@@ -45,6 +48,11 @@ public class bangazonBEDbContext : DbContext
             new Category { Id = 2, Title = "Appliances"},
             new Category { Id = 3, Title = "Home/Office"}
         });
+        modelBuilder.Entity<Order>()
+         .HasMany(o => o.Products)
+         .WithMany(p => p.Orders)
+         .UsingEntity(j => j.ToTable("OrderProduct"));
+
     }
 }
 

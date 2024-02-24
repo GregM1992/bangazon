@@ -3,11 +3,12 @@
     public class Product
     {
         public int Id { get; set; }
-        public string productName { get; set; }
-        public int categoryId { get; set; }
-        public decimal pricePerUnit { get; set; }
-        public int quantityAvailable { get; set; }
-        public int sellerId { get; set; }
+        public string ProductName { get; set; }
+        public int CategoryId { get; set; }
+        public decimal PricePerUnit { get; set; }
+        public int QuantityAvailable { get; set; }
+        public int SellerId { get; set; }
+        public ICollection<Order>? Orders { get; set; }
 
     }
 }
