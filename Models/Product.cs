@@ -9,6 +9,8 @@
         public int QuantityAvailable { get; set; }
         public int SellerId { get; set; }
         public ICollection<Order>? Orders { get; set; }
+        public Category? Category { get; set; }
+        
 
     }
 }
