@@ -22,7 +22,20 @@ builder.Services.Configure<JsonOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5003")
+        .AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
+
+app.UseCors();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -36,53 +49,67 @@ app.UseHttpsRedirection();
 
 app.MapGet("/products", (bangazonBEDbContext db) =>
 {
-    return db.Products.ToList();
+    return db.Products.Include(p => p.Category).ToList();
+
 });
 
 
 
-app.MapGet("/products/{sellerId}/store", (bangazonBEDbContext db, int sellerId) =>
+app.MapGet("/products/{sellerId}/store", (bangazonBEDbContext db, int sellerId) => //get products from a single seller
 {
     return db.Products.Where(p => p.SellerId == sellerId).ToList();
 });
 
 
 
-app.MapGet("/products/{id}", (bangazonBEDbContext db, int id) => 
+app.MapGet("/products/{id}", (bangazonBEDbContext db, int id) =>  // get product details
 {
     return db.Products.Single(p => p.Id == id);
 });
 
 
 
-app.MapGet("/orders", (bangazonBEDbContext db) =>
+app.MapGet("/orders", (bangazonBEDbContext db) => //get all orders
 {
     return db.Orders.Include(p => p.Products).ToList();
 });
 
 
 
-app.MapGet("/orders/{id}",(bangazonBEDbContext db, int id) =>
+app.MapGet("/orders/{id}",(bangazonBEDbContext db, int id) =>  //get a single users orders
 {
     return db.Orders.Where(o =>  o.Id == id).ToList();
 });
 
 
 
-app.MapGet("/user/id", (bangazonBEDbContext db, int id) =>
+app.MapGet("/user/{id}", (bangazonBEDbContext db, int id) => //get a single users details
 {
     return db.Orders.Single(u => u.Id == id);
 });
 
+app.MapGet("/checkuser/{uid}", (bangazonBEDbContext db, string uid) => //check for user
+{
+    var user = db.Users.Where(user => user.Uid == uid).ToList();
+
+    if (uid == null)
+    {
+        return Results.NotFound();
+    }
+    else
+    {
+        return Results.Ok(user);
+    }
+});
 
 
-app.MapGet("/categories", (bangazonBEDbContext db) => {
+app.MapGet("/categories", (bangazonBEDbContext db) => { // get all categories
     return db.Categories.ToList();
 });
 
 
 
-app.MapPost("/user", (bangazonBEDbContext db, User newUser) =>
+app.MapPost("/user", (bangazonBEDbContext db, User newUser) =>  // register a user
 {
     try
     {
@@ -97,28 +124,37 @@ app.MapPost("/user", (bangazonBEDbContext db, User newUser) =>
 });
 
 
-app.MapPost("/orders", (bangazonBEDbContext db , Order newOrder) =>
+app.MapPost("/openOrder", (bangazonBEDbContext db , Order newOrder) => // get open order/cart
 {
-    try
+    if (db.Orders.Any(o => o.IsComplete)){
+    throw new Exception("You already have an open cart, please complete that one first.");
+
+    } else
     {
-    db.Orders.Add(newOrder);
-    db.SaveChanges();
-    return Results.Created($"/orders/{newOrder.Id}", newOrder);
-    } 
-    catch (DbUpdateException)
-    {
+      try
+         {
+            db.Orders.Add(newOrder);
+            db.SaveChanges();
+            return Results.Created($"/orders/{newOrder.Id}", newOrder);
+         } 
+      catch (DbUpdateException)
+         {
         return Results.BadRequest("There was an issue creating the order");
+          }
     }
+
 });
 
 
 
 
-app.MapPost("/orders/addProduct", (bangazonBEDbContext db, addProductDTO newProduct) =>
+app.MapPost("/orders/addProductToCart", (bangazonBEDbContext db, addProductDTO newProduct) =>  // add product to open cart
 {
-    var order = db.Orders.Include(o => o.Products).FirstOrDefault(o => o.Id == newProduct.OrderId);
+    Order openOrder = db.Orders.Include(p => p.Products).FirstOrDefault(o => !o.IsComplete);
 
-    if (order == null)
+    newProduct.OrderId = openOrder.Id;
+
+    if (openOrder == null)
     {
         return Results.NotFound("Order not found.");
     }
@@ -130,41 +166,65 @@ app.MapPost("/orders/addProduct", (bangazonBEDbContext db, addProductDTO newProd
         return Results.NotFound("Product not found.");
     }
 
-    order.Products.Add(product);
+    openOrder.Products.Add(product);
 
     db.SaveChanges();
 
     return Results.Created($"/orders/addProduct", newProduct);
 });
 
-app.MapDelete("/orders/{orderId}/products/{productId}", (bangazonBEDbContext db, int orderId, int productId) =>
+app.MapDelete("/cart/{productId}", (bangazonBEDbContext db, int productId) =>  //delete product from cart
 {
-    var order = db.Orders.Include(o => o.Products).FirstOrDefault(o => o.Id == orderId);
+    Order openOrder = db.Orders.Include(o => o.Products).ThenInclude(p => p.Category).FirstOrDefault(o => !o.IsComplete);
 
-    if (order == null)
-    {
-        return Results.NotFound("Order not found.");
-    }
+    var productToDelete = openOrder.Products.FirstOrDefault(o => o.Id == productId);
 
-    var product = db.Products.Find(productId);
-
-    if (product == null)
-    {
-        return Results.NotFound("Product not found.");
-    }
-
-    order.Products.Remove(product);
+    openOrder.Products.Remove(productToDelete);
 
     db.SaveChanges();
 
-    return Results.Created($"/api/orders/{orderId}/products/{productId}", product);
 });
 
-app.MapGet("/payments", (bangazonBEDbContext db, int id) =>
+app.MapGet("/payments", (bangazonBEDbContext db, int id) => // get all payment types
 {
     return db.PaymentTypes.ToList();
 });
 
+app.MapDelete("/orders", (bangazonBEDbContext db, int id) =>  //delete single order
+{
+    var orderToDelete = db.Orders.FirstOrDefault(o => o.Id == id);
+    
+    db.Orders.Remove(orderToDelete);
+    db.SaveChanges();
+
+});
+
+app.MapPatch("/orders", (bangazonBEDbContext db, int id) => //close order
+{
+    var orderToClose = db.Orders.FirstOrDefault(o => o.Id == id);
+    orderToClose.IsComplete = true;
+    db.SaveChanges();
+});
+
+app.MapGet("/cart", (bangazonBEDbContext db) => // get open order/cart to show products
+{
+    Order openOrder = db.Orders.Include(o => o.Products).ThenInclude(p => p.Category).FirstOrDefault(o => !o.IsComplete);
+    return openOrder.Products;
+    
+});
+
+app.MapGet("/openCart", (bangazonBEDbContext db) => //get order/cart
+{
+    Order openOrder = db.Orders.Include(o => o.Products).ThenInclude(p => p.Category).FirstOrDefault(o => !o.IsComplete);
+    return openOrder;
+});
+
+
+app.MapPost("/createProduct", (bangazonBEDbContext db, Product newProduct) => //create new product
+{
+    db.Products.Add(newProduct);
+    db.SaveChanges();
+});
 
 app.Run();
 

@@ -7,5 +7,6 @@
         public bool IsComplete { get; set; }
         public int PaymentTypeId { get; set; }
         public ICollection<Product>? Products { get; set; }
+
     }
 }
